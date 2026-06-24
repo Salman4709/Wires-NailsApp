@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <!-- ═══ SEO & Identity ═══ -->
+  <title>سلك ومسمار</title>
+  <meta name="description" content="نظام إدارة التوزيع — سلك ومسمار">
+  <meta name="application-name" content="سلك ومسمار">
+
+  <!-- ═══ PWA Manifest ═══ -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- ═══ iOS / Safari PWA ═══ -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="سلك ومسمار">
+  <link rel="apple-touch-icon" href="icons/Nails.x1.png">
+  <link rel="apple-touch-icon" sizes="256x256" href="icons/Nails.x5@0.5x.png">
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/Nails.x25@0.25x.png">
+
+  <!-- ═══ Status Bar Color ═══ -->
+  <meta name="theme-color" content="#1F2421">
+  <meta name="msapplication-navbutton-color" content="#1F2421">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- ═══ Favicon ═══ -->
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/Nails.x1.png">
+  <link rel="icon" type="image/png" sizes="256x256" href="icons/Nails.x5@0.5x.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="icons/Nails.x25@0.25x.png">
+
+  <style>
+    /* ═══════════════════════════════════════════
+       Reset & Full-Screen Shell
+    ════════════════════════════════════════════ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --status-bar: #1F2421;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--status-bar);
+      /* Force portrait on mobile via CSS (JS handles lock) */
+    }
+
+    /* ── Safe-area insets (iPhone notch / Dynamic Island) ── */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    /* ── Full-screen iframe ── */
+    #app-frame {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #1F2421;
+    }
+
+    /* ── Splash screen shown while iframe loads ── */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: #1F2421;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      z-index: 9999;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    #splash.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #splash img {
+      width: 96px;
+      height: 96px;
+      border-radius: 22px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    #splash p {
+      color: #a0aec0;
+      font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+    }
+
+    #splash-title {
+      color: #e2e8f0;
+      font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1);     box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+      50%       { transform: scale(1.06); box-shadow: 0 12px 40px rgba(0,0,0,0.7); }
+    }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.12);
+      border-top-color: #718096;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Error state ── */
+    #error-box {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px;
+      text-align: center;
+    }
+
+    #error-box p {
+      color: #fc8181;
+      font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    #error-box button {
+      background: #2d3748;
+      color: #e2e8f0;
+      border: 1px solid #4a5568;
+      border-radius: 10px;
+      padding: 10px 24px;
+      font-size: 14px;
+      font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #error-box button:hover {
+      background: #3d4a5c;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Splash Screen ── -->
+  <div id="splash">
+    <img src="icons/Nails.x1.png" alt="سلك ومسمار" id="splash-icon">
+    <div id="splash-title">سلك ومسمار</div>
+
+    <div id="loading-indicator">
+      <div class="spinner"></div>
+    </div>
+    <p id="splash-msg">جاري تحميل التطبيق...</p>
+
+    <div id="error-box">
+      <p id="error-msg">
+        تعذّر تحميل التطبيق.<br>
+        تأكد من اتصال الإنترنت وأنك مسجّل في حساب Google.
+      </p>
+      <button onclick="reloadApp()">إعادة المحاولة</button>
+    </div>
+  </div>
+
+  <!-- ── App iframe ── -->
+  <iframe
+    id="app-frame"
+    src="about:blank"
+    title="سلك ومسمار — نظام إدارة التوزيع"
+    allow="fullscreen"
+    sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+  ></iframe>
+
+  <script>
+    /* ════════════════════════════════════════════
+       Configuration
+    ════════════════════════════════════════════ */
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbxo-XSR5GBzFezLOnWwmsQ6gY0siD_IxYV02QqT4u8VsI48KUkHHMQAoYGKPifCxi65/exec';
+
+    /* ════════════════════════════════════════════
+       Screen Orientation Lock (Portrait)
+    ════════════════════════════════════════════ */
+    function lockPortrait() {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(function() {
+          // Browser may deny lock outside of fullscreen — ignore silently
+        });
+      }
+    }
+
+    /* ════════════════════════════════════════════
+       Fullscreen (Android Chrome — hides browser bar)
+    ════════════════════════════════════════════ */
+    function requestFullscreen() {
+      var el = document.documentElement;
+      if (el.requestFullscreen)            el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }
+
+    /* ════════════════════════════════════════════
+       Splash Management
+    ════════════════════════════════════════════ */
+    var LOAD_TIMEOUT_MS = 30000;  // 30 seconds
+    var timeoutHandle   = null;
+
+    function hideSplash() {
+      clearTimeout(timeoutHandle);
+      var splash = document.getElementById('splash');
+      splash.classList.add('hidden');
+    }
+
+    function showError(msg) {
+      clearTimeout(timeoutHandle);
+      document.getElementById('loading-indicator').style.display = 'none';
+      document.getElementById('splash-msg').style.display        = 'none';
+      document.getElementById('error-box').style.display         = 'flex';
+      if (msg) document.getElementById('error-msg').textContent  = msg;
+    }
+
+    function reloadApp() {
+      document.getElementById('loading-indicator').style.display = 'flex';
+      document.getElementById('splash-msg').style.display        = 'block';
+      document.getElementById('error-box').style.display         = 'none';
+      loadApp();
+    }
+
+    /* ════════════════════════════════════════════
+       iframe Loading
+    ════════════════════════════════════════════ */
+    function loadApp() {
+      var frame = document.getElementById('app-frame');
+
+      // Reset
+      frame.onload  = null;
+      frame.onerror = null;
+      frame.src = 'about:blank';
+
+      timeoutHandle = setTimeout(function() {
+        showError('انتهت مهلة تحميل التطبيق.\nتأكد من اتصال الإنترنت وأنك مسجّل في حساب Google ثم أعد المحاولة.');
+      }, LOAD_TIMEOUT_MS);
+
+      frame.onload = function() {
+        // The iframe loaded successfully — hide splash after a short grace period
+        // (GAS may redirect once for auth, so we wait briefly)
+        setTimeout(hideSplash, 600);
+      };
+
+      frame.onerror = function() {
+        showError();
+      };
+
+      // Set src AFTER attaching handlers
+      frame.src = GAS_URL;
+    }
+
+    /* ════════════════════════════════════════════
+       PWA Install Prompt (Android)
+    ════════════════════════════════════════════ */
+    var deferredInstallPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      // Auto-prompt after 3 seconds if not already installed
+      setTimeout(function() {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+        }
+      }, 3000);
+    });
+
+    /* ════════════════════════════════════════════
+       Boot Sequence
+    ════════════════════════════════════════════ */
+    document.addEventListener('DOMContentLoaded', function() {
+      lockPortrait();
+      loadApp();
+
+      // On user interaction (tap), request fullscreen to hide browser bar
+      document.addEventListener('touchstart', function onFirstTouch() {
+        requestFullscreen();
+        document.removeEventListener('touchstart', onFirstTouch);
+      }, { once: true });
+
+      document.addEventListener('click', function onFirstClick() {
+        requestFullscreen();
+        document.removeEventListener('click', onFirstClick);
+      }, { once: true });
+    });
+
+    /* ════════════════════════════════════════════
+       Service Worker Registration (for PWA caching)
+    ════════════════════════════════════════════ */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(function(err) {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
+
+</body>
+</html>
