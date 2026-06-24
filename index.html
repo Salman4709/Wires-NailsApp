@@ -41,7 +41,12 @@
     }
 
     :root {
-      --status-bar: #1F2421;
+      --status-bar:  #1F2421;
+      /* ألوان التطبيق — بيج رملي دافئ */
+      --splash-bg:   #F4F1DE;   /* خلفية Splash = خلفية التطبيق */
+      --splash-text: #221F1C;   /* نص داكن قريب من الأنثراسيت */
+      --splash-sub:  #6B6459;   /* نص ثانوي بني رمادي دافئ */
+      --accent:      #B85A3C;   /* تراكوتا — لون الـ spinner */
     }
 
     html, body {
@@ -49,7 +54,6 @@
       height: 100%;
       overflow: hidden;
       background: var(--status-bar);
-      /* Force portrait on mobile via CSS (JS handles lock) */
     }
 
     /* ── Safe-area insets (iPhone notch / Dynamic Island) ── */
@@ -66,21 +70,21 @@
       width: 100%;
       height: 100%;
       border: none;
-      background: #1F2421;
+      background: var(--splash-bg);
     }
 
     /* ── Splash screen shown while iframe loads ── */
     #splash {
       position: fixed;
       inset: 0;
-      background: #1F2421;
+      background: var(--splash-bg);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 24px;
+      gap: 20px;
       z-index: 9999;
-      transition: opacity 0.4s ease, visibility 0.4s ease;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
     }
 
     #splash.hidden {
@@ -90,22 +94,22 @@
     }
 
     #splash img {
-      width: 96px;
-      height: 96px;
-      border-radius: 22px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 100px;
+      height: 100px;
+      border-radius: 24px;
+      box-shadow: 0 6px 24px rgba(184, 90, 60, 0.25);
       animation: pulse 1.8s ease-in-out infinite;
     }
 
     #splash p {
-      color: #a0aec0;
+      color: var(--splash-sub);
       font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
-      font-size: 15px;
-      letter-spacing: 0.5px;
+      font-size: 14px;
+      letter-spacing: 0.4px;
     }
 
     #splash-title {
-      color: #e2e8f0;
+      color: var(--splash-text);
       font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
       font-size: 20px;
       font-weight: 700;
@@ -113,18 +117,18 @@
     }
 
     @keyframes pulse {
-      0%, 100% { transform: scale(1);     box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-      50%       { transform: scale(1.06); box-shadow: 0 12px 40px rgba(0,0,0,0.7); }
+      0%, 100% { transform: scale(1);     box-shadow: 0 6px 24px rgba(184,90,60,0.25); }
+      50%       { transform: scale(1.06); box-shadow: 0 10px 32px rgba(184,90,60,0.40); }
     }
 
-    /* ── Loading spinner ── */
+    /* ── Loading spinner (تراكوتا) ── */
     .spinner {
       width: 36px;
       height: 36px;
-      border: 3px solid rgba(255,255,255,0.12);
-      border-top-color: #718096;
+      border: 3px solid rgba(184, 90, 60, 0.15);
+      border-top-color: #B85A3C;
       border-radius: 50%;
-      animation: spin 0.9s linear infinite;
+      animation: spin 0.85s linear infinite;
     }
 
     @keyframes spin {
@@ -142,18 +146,18 @@
     }
 
     #error-box p {
-      color: #fc8181;
+      color: #A1382A;
       font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
       font-size: 14px;
       line-height: 1.7;
     }
 
     #error-box button {
-      background: #2d3748;
-      color: #e2e8f0;
-      border: 1px solid #4a5568;
+      background: #1F2421;
+      color: #F4F1DE;
+      border: none;
       border-radius: 10px;
-      padding: 10px 24px;
+      padding: 10px 28px;
       font-size: 14px;
       font-family: 'Alexandria', 'Segoe UI', Tahoma, sans-serif;
       cursor: pointer;
@@ -161,7 +165,7 @@
     }
 
     #error-box button:hover {
-      background: #3d4a5c;
+      background: #2d3530;
     }
   </style>
 </head>
@@ -226,11 +230,13 @@
     ════════════════════════════════════════════ */
     var LOAD_TIMEOUT_MS = 30000;  // 30 seconds
     var timeoutHandle   = null;
+    var splashHidden    = false;
 
     function hideSplash() {
+      if (splashHidden) return;
+      splashHidden = true;
       clearTimeout(timeoutHandle);
-      var splash = document.getElementById('splash');
-      splash.classList.add('hidden');
+      document.getElementById('splash').classList.add('hidden');
     }
 
     function showError(msg) {
@@ -242,19 +248,22 @@
     }
 
     function reloadApp() {
+      splashHidden = false;
       document.getElementById('loading-indicator').style.display = 'flex';
       document.getElementById('splash-msg').style.display        = 'block';
       document.getElementById('error-box').style.display         = 'none';
+      document.getElementById('splash').classList.remove('hidden');
       loadApp();
     }
 
     /* ════════════════════════════════════════════
        iframe Loading
+       — يُخفي شاشة التحميل الداخلية للـ GAS
+         بحقن CSS عبر postMessage بعد التحميل
     ════════════════════════════════════════════ */
     function loadApp() {
       var frame = document.getElementById('app-frame');
 
-      // Reset
       frame.onload  = null;
       frame.onerror = null;
       frame.src = 'about:blank';
@@ -264,17 +273,108 @@
       }, LOAD_TIMEOUT_MS);
 
       frame.onload = function() {
-        // The iframe loaded successfully — hide splash after a short grace period
-        // (GAS may redirect once for auth, so we wait briefly)
-        setTimeout(hideSplash, 600);
+        // إخفاء شاشة التحميل الداخلية للـ GAS بعد تحميل الـ iframe
+        // نستخدم تأخيراً أطول بعض الشيء لضمان تحميل DOM الداخلي كاملاً
+        setTimeout(function() {
+          try {
+            // محاولة إخفاء #loader داخل الـ iframe مباشرة (يعمل فقط إذا كان نفس الـ origin)
+            var innerDoc = frame.contentDocument || frame.contentWindow.document;
+            var loader   = innerDoc && innerDoc.getElementById('loader');
+            if (loader) {
+              loader.style.display     = 'none';
+              loader.style.visibility  = 'hidden';
+              loader.style.opacity     = '0';
+            }
+          } catch(e) {
+            // Cross-origin — لا يمكن الوصول للـ DOM الداخلي، وهذا متوقع
+          }
+          hideSplash();
+        }, 800);
       };
 
       frame.onerror = function() {
         showError();
       };
 
-      // Set src AFTER attaching handlers
       frame.src = GAS_URL;
+    }
+
+    /* ════════════════════════════════════════════
+       Back Button — زر الرجوع
+       المنطق:
+       · عند التحميل نُضيف history entry واحداً
+         حتى يُقاطع الضغط الأول على الرجوع.
+       · عند popstate (الضغط على الرجوع) نُعيد
+         الـ entry ونسأل المستخدم عن الخروج.
+       · إذا أكّد الخروج → history.go(-2) أو
+         window.close() حسب الحالة.
+    ════════════════════════════════════════════ */
+    var backPressCount  = 0;
+    var backResetTimer  = null;
+
+    function setupBackButton() {
+      // أضف entry واحداً في الـ history ليمتص ضغطة الرجوع الأولى
+      history.pushState({ pwa: true }, '');
+
+      window.addEventListener('popstate', function(e) {
+        // أعد الـ entry حتى يكون الزر متاحاً للضغطة التالية
+        history.pushState({ pwa: true }, '');
+
+        backPressCount++;
+        clearTimeout(backResetTimer);
+        backResetTimer = setTimeout(function() { backPressCount = 0; }, 2000);
+
+        if (backPressCount >= 2) {
+          // ضغطتان متتاليتان خلال ثانيتين → خروج
+          backPressCount = 0;
+          window.close();
+          // للأجهزة التي لا تستجيب لـ window.close():
+          history.go(-(history.length));
+        } else {
+          // ضغطة أولى → أظهر تلميحاً
+          showBackToast();
+        }
+      });
+    }
+
+    /* ── Toast "اضغط مرة أخرى للخروج" ── */
+    var toastEl = null;
+    var toastTimer = null;
+
+    function showBackToast() {
+      if (!toastEl) {
+        toastEl = document.createElement('div');
+        toastEl.style.cssText = [
+          'position:fixed',
+          'bottom:32px',
+          'left:50%',
+          'transform:translateX(-50%)',
+          'background:#1F2421',
+          'color:#F4F1DE',
+          'font-family:Alexandria,Segoe UI,Tahoma,sans-serif',
+          'font-size:14px',
+          'padding:12px 24px',
+          'border-radius:12px',
+          'box-shadow:0 4px 20px rgba(0,0,0,0.35)',
+          'z-index:99999',
+          'opacity:0',
+          'transition:opacity 0.25s ease',
+          'white-space:nowrap',
+          'pointer-events:none'
+        ].join(';');
+        toastEl.textContent = 'اضغط مرة أخرى للخروج من التطبيق';
+        document.body.appendChild(toastEl);
+      }
+      // أظهر
+      clearTimeout(toastTimer);
+      requestAnimationFrame(function() {
+        toastEl.style.opacity = '1';
+      });
+      // أخفِ بعد ثانيتين
+      toastTimer = setTimeout(function() {
+        toastEl.style.opacity = '0';
+        backPressCount = 0;  // إعادة تعيين عند انتهاء مهلة التلميح
+      }, 2000);
     }
 
     /* ════════════════════════════════════════════
@@ -285,11 +385,8 @@
     window.addEventListener('beforeinstallprompt', function(e) {
       e.preventDefault();
       deferredInstallPrompt = e;
-      // Auto-prompt after 3 seconds if not already installed
       setTimeout(function() {
-        if (deferredInstallPrompt) {
-          deferredInstallPrompt.prompt();
-        }
+        if (deferredInstallPrompt) deferredInstallPrompt.prompt();
       }, 3000);
     });
 
@@ -299,8 +396,9 @@
     document.addEventListener('DOMContentLoaded', function() {
       lockPortrait();
       loadApp();
+      setupBackButton();
 
-      // On user interaction (tap), request fullscreen to hide browser bar
+      // On first tap → fullscreen to hide browser bar
       document.addEventListener('touchstart', function onFirstTouch() {
         requestFullscreen();
         document.removeEventListener('touchstart', onFirstTouch);
