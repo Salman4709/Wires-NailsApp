@@ -3,7 +3,7 @@
    Strategy: Cache-First for shell assets, Network-Only for GAS
 ════════════════════════════════════════════════════════════ */
 
-var CACHE_NAME  = 'silk-nails-shell-v1';
+var CACHE_NAME  = 'silk-nails-shell-v2';
 var SHELL_ASSETS = [
   './',
   './index.html',
