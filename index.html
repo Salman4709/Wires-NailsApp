@@ -23,7 +23,6 @@
   <!-- ═══ Status Bar Color ═══ -->
   <meta name="theme-color" content="#1F2421">
   <meta name="msapplication-navbutton-color" content="#1F2421">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- ═══ Favicon ═══ -->
   <link rel="icon" type="image/png" sizes="512x512" href="icons/Nails.x1.png">
@@ -273,23 +272,9 @@
       }, LOAD_TIMEOUT_MS);
 
       frame.onload = function() {
-        // إخفاء شاشة التحميل الداخلية للـ GAS بعد تحميل الـ iframe
-        // نستخدم تأخيراً أطول بعض الشيء لضمان تحميل DOM الداخلي كاملاً
-        setTimeout(function() {
-          try {
-            // محاولة إخفاء #loader داخل الـ iframe مباشرة (يعمل فقط إذا كان نفس الـ origin)
-            var innerDoc = frame.contentDocument || frame.contentWindow.document;
-            var loader   = innerDoc && innerDoc.getElementById('loader');
-            if (loader) {
-              loader.style.display     = 'none';
-              loader.style.visibility  = 'hidden';
-              loader.style.opacity     = '0';
-            }
-          } catch(e) {
-            // Cross-origin — لا يمكن الوصول للـ DOM الداخلي، وهذا متوقع
-          }
-          hideSplash();
-        }, 800);
+        // تأخير بسيط لضمان استقرار العرض الداخلي للـ iframe قبل إخفاء الـ Splash
+        // (لا يمكن الوصول لـ DOM الداخلي للتحقق من جهوزيته لأن GAS على Origin مختلف تماماً)
+        setTimeout(hideSplash, 800);
       };
 
       frame.onerror = function() {
@@ -297,84 +282,6 @@
       };
 
       frame.src = GAS_URL;
-    }
-
-    /* ════════════════════════════════════════════
-       Back Button — زر الرجوع
-       المنطق:
-       · عند التحميل نُضيف history entry واحداً
-         حتى يُقاطع الضغط الأول على الرجوع.
-       · عند popstate (الضغط على الرجوع) نُعيد
-         الـ entry ونسأل المستخدم عن الخروج.
-       · إذا أكّد الخروج → history.go(-2) أو
-         window.close() حسب الحالة.
-    ════════════════════════════════════════════ */
-    var backPressCount  = 0;
-    var backResetTimer  = null;
-
-    function setupBackButton() {
-      // أضف entry واحداً في الـ history ليمتص ضغطة الرجوع الأولى
-      history.pushState({ pwa: true }, '');
-
-      window.addEventListener('popstate', function(e) {
-        // أعد الـ entry حتى يكون الزر متاحاً للضغطة التالية
-        history.pushState({ pwa: true }, '');
-
-        backPressCount++;
-        clearTimeout(backResetTimer);
-        backResetTimer = setTimeout(function() { backPressCount = 0; }, 2000);
-
-        if (backPressCount >= 2) {
-          // ضغطتان متتاليتان خلال ثانيتين → خروج
-          backPressCount = 0;
-          window.close();
-          // للأجهزة التي لا تستجيب لـ window.close():
-          history.go(-(history.length));
-        } else {
-          // ضغطة أولى → أظهر تلميحاً
-          showBackToast();
-        }
-      });
-    }
-
-    /* ── Toast "اضغط مرة أخرى للخروج" ── */
-    var toastEl = null;
-    var toastTimer = null;
-
-    function showBackToast() {
-      if (!toastEl) {
-        toastEl = document.createElement('div');
-        toastEl.style.cssText = [
-          'position:fixed',
-          'bottom:32px',
-          'left:50%',
-          'transform:translateX(-50%)',
-          'background:#1F2421',
-          'color:#F4F1DE',
-          'font-family:Alexandria,Segoe UI,Tahoma,sans-serif',
-          'font-size:14px',
-          'padding:12px 24px',
-          'border-radius:12px',
-          'box-shadow:0 4px 20px rgba(0,0,0,0.35)',
-          'z-index:99999',
-          'opacity:0',
-          'transition:opacity 0.25s ease',
-          'white-space:nowrap',
-          'pointer-events:none'
-        ].join(';');
-        toastEl.textContent = 'اضغط مرة أخرى للخروج من التطبيق';
-        document.body.appendChild(toastEl);
-      }
-      // أظهر
-      clearTimeout(toastTimer);
-      requestAnimationFrame(function() {
-        toastEl.style.opacity = '1';
-      });
-      // أخفِ بعد ثانيتين
-      toastTimer = setTimeout(function() {
-        toastEl.style.opacity = '0';
-        backPressCount = 0;  // إعادة تعيين عند انتهاء مهلة التلميح
-      }, 2000);
     }
 
     /* ════════════════════════════════════════════
@@ -396,7 +303,6 @@
     document.addEventListener('DOMContentLoaded', function() {
       lockPortrait();
       loadApp();
-      setupBackButton();
 
       // On first tap → fullscreen to hide browser bar
       document.addEventListener('touchstart', function onFirstTouch() {
