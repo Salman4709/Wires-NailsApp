@@ -167,6 +167,7 @@
       background: #2d3530;
     }
   </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -268,7 +269,8 @@
       frame.src = 'about:blank';
 
       timeoutHandle = setTimeout(function() {
-        showError('انتهت مهلة تحميل التطبيق.\nتأكد من اتصال الإنترنت وأنك مسجّل في حساب Google ثم أعد المحاولة.');
+        showError('انتهت مهلة تحميل التطبيق.
+تأكد من اتصال الإنترنت وأنك مسجّل في حساب Google ثم أعد المحاولة.');
       }, LOAD_TIMEOUT_MS);
 
       frame.onload = function() {
