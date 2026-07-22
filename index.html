@@ -30,9 +30,6 @@
   <link rel="icon" type="image/png" sizes="128x128" href="icons/Nails.x25@0.25x.png">
 
   <style>
-    /* ═══════════════════════════════════════════
-       Reset & Full-Screen Shell
-    ════════════════════════════════════════════ */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -41,11 +38,10 @@
 
     :root {
       --status-bar:  #1F2421;
-      /* ألوان التطبيق — بيج رملي دافئ */
-      --splash-bg:   #F4F1DE;   /* خلفية Splash = خلفية التطبيق */
-      --splash-text: #221F1C;   /* نص داكن قريب من الأنثراسيت */
-      --splash-sub:  #6B6459;   /* نص ثانوي بني رمادي دافئ */
-      --accent:      #B85A3C;   /* تراكوتا — لون الـ spinner */
+      --splash-bg:   #F4F1DE;
+      --splash-text: #221F1C;
+      --splash-sub:  #6B6459;
+      --accent:      #B85A3C;
     }
 
     html, body {
@@ -55,7 +51,6 @@
       background: var(--status-bar);
     }
 
-    /* ── Safe-area insets (iPhone notch / Dynamic Island) ── */
     body {
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
@@ -63,7 +58,6 @@
       padding-right: env(safe-area-inset-right);
     }
 
-    /* ── Full-screen iframe ── */
     #app-frame {
       display: block;
       width: 100%;
@@ -72,7 +66,6 @@
       background: var(--splash-bg);
     }
 
-    /* ── Splash screen shown while iframe loads ── */
     #splash {
       position: fixed;
       inset: 0;
@@ -120,7 +113,6 @@
       50%       { transform: scale(1.06); box-shadow: 0 10px 32px rgba(184,90,60,0.40); }
     }
 
-    /* ── Loading spinner (تراكوتا) ── */
     .spinner {
       width: 36px;
       height: 36px;
@@ -134,7 +126,6 @@
       to { transform: rotate(360deg); }
     }
 
-    /* ── Error state ── */
     #error-box {
       display: none;
       flex-direction: column;
@@ -167,11 +158,9 @@
       background: #2d3530;
     }
   </style>
-<base target="_blank">
 </head>
 <body>
 
-  <!-- ── Splash Screen ── -->
   <div id="splash">
     <img src="icons/Nails.x1.png" alt="سلك ومسمار" id="splash-icon">
     <div id="splash-title">سلك ومسمار</div>
@@ -190,7 +179,6 @@
     </div>
   </div>
 
-  <!-- ── App iframe ── -->
   <iframe
     id="app-frame"
     src="about:blank"
@@ -200,35 +188,21 @@
   ></iframe>
 
   <script>
-    /* ════════════════════════════════════════════
-       Configuration
-    ════════════════════════════════════════════ */
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbxo-XSR5GBzFezLOnWwmsQ6gY0siD_IxYV02QqT4u8VsI48KUkHHMQAoYGKPifCxi65/exec';
 
-    /* ════════════════════════════════════════════
-       Screen Orientation Lock (Portrait)
-    ════════════════════════════════════════════ */
     function lockPortrait() {
       if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('portrait').catch(function() {
-          // Browser may deny lock outside of fullscreen — ignore silently
-        });
+        screen.orientation.lock('portrait').catch(function() {});
       }
     }
 
-    /* ════════════════════════════════════════════
-       Fullscreen (Android Chrome — hides browser bar)
-    ════════════════════════════════════════════ */
     function requestFullscreen() {
       var el = document.documentElement;
       if (el.requestFullscreen)            el.requestFullscreen();
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     }
 
-    /* ════════════════════════════════════════════
-       Splash Management
-    ════════════════════════════════════════════ */
-    var LOAD_TIMEOUT_MS = 30000;  // 30 seconds
+    var LOAD_TIMEOUT_MS = 30000;
     var timeoutHandle   = null;
     var splashHidden    = false;
 
@@ -256,11 +230,6 @@
       loadApp();
     }
 
-    /* ════════════════════════════════════════════
-       iframe Loading
-       — يُخفي شاشة التحميل الداخلية للـ GAS
-         بحقن CSS عبر postMessage بعد التحميل
-    ════════════════════════════════════════════ */
     function loadApp() {
       var frame = document.getElementById('app-frame');
 
@@ -268,14 +237,14 @@
       frame.onerror = null;
       frame.src = 'about:blank';
 
+      /* [البند 5] السطر أدناه كان يحتوي سطراً جديداً حرفياً داخل نص باقتباس مفرد
+         وهو خطأ تركيبي محتمل يمنع تفسير الـ script بأكمله عند وقوع Timeout.
+         تم توحيده في سطر واحد كإجراء وقائي. */
       timeoutHandle = setTimeout(function() {
-        showError('انتهت مهلة تحميل التطبيق.
-تأكد من اتصال الإنترنت وأنك مسجّل في حساب Google ثم أعد المحاولة.');
+        showError('انتهت مهلة تحميل التطبيق. تأكد من اتصال الإنترنت وأنك مسجّل في حساب Google ثم أعد المحاولة.');
       }, LOAD_TIMEOUT_MS);
 
       frame.onload = function() {
-        // تأخير بسيط لضمان استقرار العرض الداخلي للـ iframe قبل إخفاء الـ Splash
-        // (لا يمكن الوصول لـ DOM الداخلي للتحقق من جهوزيته لأن GAS على Origin مختلف تماماً)
         setTimeout(hideSplash, 800);
       };
 
@@ -286,9 +255,6 @@
       frame.src = GAS_URL;
     }
 
-    /* ════════════════════════════════════════════
-       PWA Install Prompt (Android)
-    ════════════════════════════════════════════ */
     var deferredInstallPrompt = null;
 
     window.addEventListener('beforeinstallprompt', function(e) {
@@ -299,14 +265,10 @@
       }, 3000);
     });
 
-    /* ════════════════════════════════════════════
-       Boot Sequence
-    ════════════════════════════════════════════ */
     document.addEventListener('DOMContentLoaded', function() {
       lockPortrait();
       loadApp();
 
-      // On first tap → fullscreen to hide browser bar
       document.addEventListener('touchstart', function onFirstTouch() {
         requestFullscreen();
         document.removeEventListener('touchstart', onFirstTouch);
@@ -318,9 +280,6 @@
       }, { once: true });
     });
 
-    /* ════════════════════════════════════════════
-       Service Worker Registration (for PWA caching)
-    ════════════════════════════════════════════ */
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('sw.js').catch(function(err) {
